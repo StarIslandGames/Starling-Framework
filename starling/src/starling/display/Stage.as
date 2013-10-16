@@ -54,6 +54,7 @@ package starling.display
      * */
     public class Stage extends DisplayObjectContainer
     {
+	    private var _starling : Starling;
         private var mWidth:int;
         private var mHeight:int;
         private var mColor:uint;
@@ -61,8 +62,9 @@ package starling.display
         private var mEnterFrameListeners:Vector.<DisplayObject>;
         
         /** @private */
-        public function Stage(width:int, height:int, color:uint=0)
+        public function Stage( starling : Starling, width:int, height:int, color:uint=0)
         {
+	        _starling = starling;
             mWidth = width;
             mHeight = height;
             mColor = color;
@@ -222,5 +224,9 @@ package starling.display
          *  to the <code>viewPort</code> property of the Starling object. */
         public function get stageHeight():int { return mHeight; }
         public function set stageHeight(value:int):void { mHeight = value; }
+
+	    public function get starling() : Starling {
+		    return _starling;
+	    }
     }
 }

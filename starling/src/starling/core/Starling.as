@@ -673,7 +673,6 @@ package starling.core
             // allow objects that depend on mouse-over state to be updated immediately
             if (event.type == MouseEvent.MOUSE_UP)
                 mTouchProcessor.enqueue(touchID, TouchPhase.HOVER, globalX, globalY);
-	        }
         }
         
         private function get touchEventTypes():Array

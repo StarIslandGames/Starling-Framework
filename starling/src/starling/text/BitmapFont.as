@@ -74,6 +74,8 @@ package starling.text
 	    protected var mSize:Number;
 	    protected var mLineHeight:Number;
 	    protected var mBaseline:Number;
+        private var mOffsetX:Number;
+        private var mOffsetY:Number;
         private var mHelperImage:Image;
         private var mCharLocationPool:Vector.<CharLocation>;
 
@@ -87,6 +89,7 @@ package starling.text
             
             mName = "unknown";
             mLineHeight = mSize = mBaseline = 14;
+            mOffsetX = mOffsetY = 0.0;
             mTexture = texture;
             mChars = new Dictionary();
             mHelperImage = new Image(texture);
@@ -498,7 +501,7 @@ package starling.text
                     } // for each char
                 } // if (mLineHeight <= containerHeight)
                 
-                if (autoScale && !finished)
+                if (autoScale && !finished && fontSize > 3)
                 {
                     fontSize -= 1;
                     lines.length = 0;
@@ -535,8 +538,8 @@ package starling.text
                 for (var c:int=0; c<numChars; ++c)
                 {
                     charLocation = line[c];
-                    charLocation.x = scale * (charLocation.x + xOffset);
-                    charLocation.y = scale * (charLocation.y + yOffset);
+                    charLocation.x = scale * (charLocation.x + xOffset + mOffsetX);
+                    charLocation.y = scale * (charLocation.y + yOffset + mOffsetY);
                     charLocation.scale = scale;
                     
                     if (charLocation.char.width > 0 && charLocation.char.height > 0)
@@ -556,7 +559,7 @@ package starling.text
         /** The native size of the font. */
         public function get size():Number { return mSize; }
         
-        /** The height of one line in pixels. */
+        /** The height of one line in points. */
         public function get lineHeight():Number { return mLineHeight; }
         public function set lineHeight(value:Number):void { mLineHeight = value; }
         
@@ -564,8 +567,20 @@ package starling.text
         public function get smoothing():String { return mHelperImage.smoothing; }
         public function set smoothing(value:String):void { mHelperImage.smoothing = value; } 
         
-        /** The baseline of the font. */
+        /** The baseline of the font. This property does not affect text rendering;
+         *  it's just an information that may be useful for exact text placement. */
         public function get baseline():Number { return mBaseline; }
+        public function set baseline(value:Number):void { mBaseline = value; }
+        
+        /** An offset that moves any generated text along the x-axis (in points).
+         *  Useful to make up for incorrect font data. @default 0. */ 
+        public function get offsetX():Number { return mOffsetX; }
+        public function set offsetX(value:Number):void { mOffsetX = value; }
+        
+        /** An offset that moves any generated text along the y-axis (in points).
+         *  Useful to make up for incorrect font data. @default 0. */
+        public function get offsetY():Number { return mOffsetY; }
+        public function set offsetY(value:Number):void { mOffsetY = value; }
     }
 }
 

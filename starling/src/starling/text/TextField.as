@@ -12,10 +12,10 @@ package starling.text
 {
     import flash.display.BitmapData;
     import flash.display.StageQuality;
+    import flash.display3D.Context3DTextureFormat;
     import flash.geom.Matrix;
     import flash.geom.Rectangle;
     import flash.text.AntiAliasType;
-    import flash.text.TextField;
     import flash.text.TextFormat;
     import flash.utils.Dictionary;
     
@@ -41,7 +41,7 @@ package starling.text
      *  <p>There are two types of fonts that can be displayed:</p>
      *  
      *  <ul>
-     *    <li>Standard true type fonts. This renders the text just like a conventional Flash
+     *    <li>Standard TrueType fonts. This renders the text just like a conventional Flash
      *        TextField. It is recommended to embed the font, since you cannot be sure which fonts
      *        are available on the client system, and since this enhances rendering quality. 
      *        Simply pass the font name to the corresponding property.</li>
@@ -61,6 +61,19 @@ package starling.text
      *        71squared or <a href="http://http://www.bmglyph.com">bmGlyph</a> (both commercial). 
      *        They support Starling natively.</li>
      *  </ul> 
+     * 
+     *  <strong>Batching of TextFields</strong>
+     *  
+     *  <p>Normally, TextFields will require exactly one draw call. For TrueType fonts, you cannot
+     *  avoid that; bitmap fonts, however, may be batched if you enable the "batchable" property.
+     *  This makes sense if you have several TextFields with short texts that are rendered one
+     *  after the other (e.g. subsequent children of the same sprite), or if your bitmap font
+     *  texture is in your main texture atlas.</p>
+     *  
+     *  <p>The recommendation is to activate "batchable" if it reduces your draw calls (use the
+     *  StatsDisplay to check this) AND if the TextFields contain no more than about 10-15
+     *  characters (per TextField). For longer texts, the batching would take up more CPU time
+     *  than what is saved by avoiding the draw calls.</p>
      */
     public class TextField extends DisplayObjectContainer
     {
@@ -84,6 +97,7 @@ package starling.text
         protected var mRequiresRedraw:Boolean;
         private var mIsRenderedText:Boolean;
         private var mTextBounds:Rectangle;
+        private var mBatchable:Boolean;
         
         private var mHitArea:DisplayObject;
         private var mBorder:DisplayObjectContainer;
@@ -151,6 +165,8 @@ package starling.text
             }
         }
         
+        // TrueType font rendering
+        
         private function createRenderedContents():void
         {
             if (mQuadBatch)
@@ -159,7 +175,48 @@ package starling.text
                 mQuadBatch = null; 
             }
             
+            if (mTextBounds == null) 
+                mTextBounds = new Rectangle();
+            
             var scale:Number  = Starling.contentScaleFactor;
+            var bitmapData:BitmapData = renderText(scale, mTextBounds);
+            var format:String = "BGRA_PACKED" in Context3DTextureFormat ? 
+                                "bgraPacked4444" : "bgra";
+            
+            mHitArea.width  = bitmapData.width  / scale;
+            mHitArea.height = bitmapData.height / scale;
+            
+            var texture:Texture = Texture.fromBitmapData(bitmapData, false, false, scale, format);
+            texture.root.onRestore = function():void
+            {
+                texture.root.uploadBitmapData(renderText(scale, mTextBounds));
+            };
+            
+            bitmapData.dispose();
+            
+            if (mImage == null) 
+            {
+                mImage = new Image(texture);
+                mImage.touchable = false;
+                addChild(mImage);
+            }
+            else 
+            { 
+                mImage.texture.dispose();
+                mImage.texture = texture; 
+                mImage.readjustSize(); 
+            }
+        }
+
+        /** formatText is called immediately before the text is rendered. The intent of formatText
+         *  is to be overridden in a subclass, so that you can provide custom formatting for TextField.
+         *  <code>textField</code> is the flash.text.TextField object that you can specially format;
+         *  <code>textFormat</code> is the default TextFormat for <code>textField</code>.
+         */
+        protected function formatText(textField:flash.text.TextField, textFormat:TextFormat):void {}
+
+        private function renderText(scale:Number, resultTextBounds:Rectangle):BitmapData
+        {
             var width:Number  = mHitArea.width  * scale;
             var height:Number = mHitArea.height * scale;
             var hAlign:String = mHAlign;
@@ -208,6 +265,10 @@ package starling.text
             if (isVerticalAutoSize)
                 sNativeTextField.height = height = Math.ceil(textHeight + 4);
             
+            // avoid invalid texture size
+            if (width  < 1) width  = 1.0;
+            if (height < 1) height = 1.0;
+            
             var xOffset:Number = 0.0;
             if (hAlign == HAlign.LEFT)        xOffset = 2; // flash adds a 2 pixel offset
             else if (hAlign == HAlign.CENTER) xOffset = (width - textWidth) / 2.0;
@@ -235,36 +296,11 @@ package starling.text
             sNativeTextField.text = "";
             
             // update textBounds rectangle
-            if (mTextBounds == null) mTextBounds = new Rectangle();
-            mTextBounds.setTo(xOffset   / scale, yOffset    / scale,
+            resultTextBounds.setTo(xOffset   / scale, yOffset    / scale,
                               textWidth / scale, textHeight / scale);
             
-            // update hit area
-            mHitArea.width  = width  / scale;
-            mHitArea.height = height / scale;
-            
-            var texture:Texture = Texture.fromBitmapData(bitmapData, false, false, scale);
-            
-            if (mImage == null) 
-            {
-                mImage = new Image(texture);
-                mImage.touchable = false;
-                addChild(mImage);
+            return bitmapData;
             }
-            else 
-            { 
-                mImage.texture.dispose();
-                mImage.texture = texture; 
-                mImage.readjustSize(); 
-            }
-        }
-
-        /** formatText is called immediately before the text is rendered. The intent of formatText
-         *  is to be overridden in a subclass, so that you can provide custom formatting for TextField.
-         *  <code>textField</code> is the flash.text.TextField object that you can specially format;
-         *  <code>textFormat</code> is the default TextFormat for <code>textField</code>.
-         */
-        protected function formatText(textField:flash.text.TextField, textFormat:TextFormat):void {}
 
         private function autoScaleNativeTextField(textField:flash.text.TextField):void
         {
@@ -281,6 +317,8 @@ package starling.text
                 textField.setTextFormat(format);
             }
         }
+        
+        // bitmap font composition
         
         private function createComposedContents():void
         {
@@ -321,6 +359,8 @@ package starling.text
             bitmapFont.fillQuadBatch(mQuadBatch,
                 width, height, mText, mFontSize, mColor, hAlign, vAlign, mAutoScale, mKerning);
             
+            mQuadBatch.batchable = mBatchable;
+            
             if (mAutoSize != TextFieldAutoSize.NONE)
             {
                 mTextBounds = mQuadBatch.getBounds(mQuadBatch, mTextBounds);
@@ -336,6 +376,8 @@ package starling.text
                 mTextBounds = null;
             }
         }
+        
+        // helpers
         
         private function updateBorder():void
         {
@@ -357,6 +399,8 @@ package starling.text
             bottomLine.y = height - 1;
             topLine.color = rightLine.color = bottomLine.color = leftLine.color = mColor;
         }
+        
+        // properties
         
         private function get isHorizontalAutoSize():Boolean
         {
@@ -571,6 +615,17 @@ package starling.text
             }
         }
 
+        /** Indicates if TextField should be batched on rendering. This works only with bitmap
+         *  fonts, and it makes sense only for TextFields with no more than 10-15 characters.
+         *  Otherwise, the CPU costs will exceed any gains you get from avoiding the additional
+         *  draw call. @default false */
+        public function get batchable():Boolean { return mBatchable; }
+        public function set batchable(value:Boolean):void
+        { 
+            mBatchable = value;
+            if (mQuadBatch) mQuadBatch.batchable = value;
+        }
+
         /** The native Flash BitmapFilters to apply to this TextField. 
          *  Only available when using standard (TrueType) fonts! */
         public function get nativeFilters():Array { return mNativeFilters; }
@@ -584,19 +639,21 @@ package starling.text
         }
         
         /** Makes a bitmap font available at any TextField in the current stage3D context.
-         *  The font is identified by its <code>name</code>.
+         *  The font is identified by its <code>name</code> (not case sensitive).
          *  Per default, the <code>name</code> property of the bitmap font will be used, but you 
          *  can pass a custom name, as well. @returns the name of the font. */
         public static function registerBitmapFont(bitmapFont:BitmapFont, name:String=null):String
         {
             if (name == null) name = bitmapFont.name;
-            bitmapFonts[name] = bitmapFont;
+            bitmapFonts[name.toLowerCase()] = bitmapFont;
             return name;
         }
         
         /** Unregisters the bitmap font and, optionally, disposes it. */
         public static function unregisterBitmapFont(name:String, dispose:Boolean=true):void
         {
+            name = name.toLowerCase();
+            
             if (dispose && bitmapFonts[name] != undefined)
                 bitmapFonts[name].dispose();
             
@@ -614,7 +671,7 @@ package starling.text
 	        if ( name == BitmapFont.MINI && bitmapFonts[name] == undefined ) {
 		        registerBitmapFont( MiniBitmapFont.font );
 		    }
-            return bitmapFonts[name];
+            return bitmapFonts[name.toLowerCase()];
         }
         
         /** Stores the currently available bitmap fonts. Since a bitmap font will only work

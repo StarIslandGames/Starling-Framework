@@ -42,6 +42,9 @@ package starling.display
         
         private var mVertexDataCache:VertexData;
         private var mVertexDataCacheInvalid:Boolean;
+
+	    // SIG: add memory-friendly helper
+	    static private const HELPER_RECT : Rectangle = new Rectangle();
         
         /** Creates a quad with a texture mapped onto it. */
         public function Image(texture:Texture)
@@ -88,7 +91,8 @@ package starling.display
          *  to synchronize image and texture size after assigning a texture with a different size.*/
         public function readjustSize():void
         {
-            var frame:Rectangle = texture.frame;
+	        // SIG: use memory-friendly get frame
+	        var frame : Rectangle = texture.getFrameTo( HELPER_RECT );
             var width:Number  = frame ? frame.width  : texture.width;
             var height:Number = frame ? frame.height : texture.height;
             

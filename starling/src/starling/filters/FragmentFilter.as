@@ -14,12 +14,12 @@ package starling.filters
     import flash.display3D.Context3DProgramType;
     import flash.display3D.Context3DVertexBufferFormat;
     import flash.display3D.IndexBuffer3D;
-    import flash.display3D.Program3D;
     import flash.display3D.VertexBuffer3D;
     import flash.errors.IllegalOperationError;
     import flash.geom.Matrix;
     import flash.geom.Rectangle;
     import flash.system.Capabilities;
+	import flash.utils.Dictionary;
     import flash.utils.getQualifiedClassName;
     
     import starling.core.RenderSupport;
@@ -30,6 +30,8 @@ package starling.filters
     import starling.display.Image;
     import starling.display.QuadBatch;
     import starling.display.Stage;
+	import starling.display.programs.AGALProgram;
+	import starling.display.programs.IProgram;
     import starling.errors.AbstractClassError;
     import starling.errors.MissingContextError;
     import starling.events.Event;
@@ -88,7 +90,11 @@ package starling.filters
         private var mMvpConstantID:int = 0;
         
         private var mNumPasses:int;
-        private var mPassTextures:Vector.<Texture>;
+	    //SIG: MultiStarling fixes of mPassTextures
+        //private var mPassTextures:Vector.<Texture>;
+	    private var _msPassTextures:Dictionary = new Dictionary( true );
+	    private function get mPassTextures() : Vector.<Texture> { return _msPassTextures[ Starling.context ] }
+	    private function set mPassTextures( val : Vector.<Texture> ) : void { _msPassTextures[ Starling.context ] = val; }
 
         private var mMode:String;
         private var mResolution:Number;
@@ -406,10 +412,12 @@ package starling.filters
         
         private function disposePassTextures():void
         {
+	        // SIG: also dispose pass textures for each used context
+	        for each ( var mPassTextures : Vector.<Texture> in _msPassTextures )
             for each (var texture:Texture in mPassTextures)
                 texture.dispose();
-            
-            mPassTextures = null;
+
+	        _msPassTextures = null;
         }
         
         private function disposeCache():void
@@ -459,16 +467,17 @@ package starling.filters
         {
             // clean up resources
         }
-        
+
         /** Assembles fragment- and vertex-shaders, passed as Strings, to a Program3D. 
          *  If any argument is  null, it is replaced by the class constants STD_FRAGMENT_SHADER or
          *  STD_VERTEX_SHADER, respectively. */
-        protected function assembleAgal(fragmentShader:String=null, vertexShader:String=null):Program3D
+        protected function assembleAgal(fragmentShader:String=null, vertexShader:String=null):IProgram
         {
             if (fragmentShader == null) fragmentShader = STD_FRAGMENT_SHADER;
             if (vertexShader   == null) vertexShader   = STD_VERTEX_SHADER;
-            
-            return RenderSupport.assembleAgal(vertexShader, fragmentShader);
+
+	        // SIG: Update to MultiStarling-friendly Program instead of classic Program3D
+            return new AGALProgram(vertexShader, fragmentShader);
         }
         
         // cache

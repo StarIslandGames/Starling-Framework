@@ -18,7 +18,8 @@ package starling.display
     import starling.events.Touch;
     import starling.events.TouchEvent;
     import starling.events.TouchPhase;
-    import starling.text.TextField;
+	import starling.text.MultiStarlingTextField;
+	import starling.text.TextField;
     import starling.textures.Texture;
     import starling.utils.HAlign;
     import starling.utils.VAlign;
@@ -91,7 +92,8 @@ package starling.display
         {
             if (mTextField == null)
             {
-                mTextField = new TextField(mTextBounds.width, mTextBounds.height, "");
+	            // SIG: MultiStarling support
+                mTextField = new MultiStarlingTextField(mTextBounds.width, mTextBounds.height, "");
                 mTextField.vAlign = VAlign.CENTER;
                 mTextField.hAlign = HAlign.CENTER;
                 mTextField.touchable = false;

@@ -78,6 +78,8 @@ package starling.display
                 mVertexData.getPosition(3, sHelperPoint);
                 resultRect.setTo(0.0, 0.0, sHelperPoint.x, sHelperPoint.y);
             }
+            /*
+            SIG>> Does not work properly with dragonBones StarlingDisplayBridge (sets transform with transformationMatrix.copyFrom instead of transformationMatrix =)
             else if (targetSpace == parent && rotation == 0.0) // optimization
             {
                 var scaleX:Number = this.scaleX;
@@ -88,6 +90,7 @@ package starling.display
                 if (scaleX < 0) { resultRect.width  *= -1; resultRect.x -= resultRect.width;  }
                 if (scaleY < 0) { resultRect.height *= -1; resultRect.y -= resultRect.height; }
             }
+            <<SIG */
             else
             {
                 getTransformationMatrix(targetSpace, sHelperMatrix);
@@ -167,7 +170,10 @@ package starling.display
         }
         
         /** Returns true if the quad (or any of its vertices) is non-white or non-opaque. */
-        public function get tinted():Boolean { return mTinted; }
+        public function get tinted():Boolean {
+	        // SIG: render optimization (don't switch program/quadbatch if only tint is set for image - less drawcalls)
+	        return true; //mTinted;
+        }
         
         /** Indicates if the rgb values are stored premultiplied with the alpha value; this can
          *  affect the rendering. (Most developers don't have to care, though.) */

@@ -13,8 +13,9 @@ package starling.filters
     import flash.display3D.Context3D;
     import flash.display3D.Context3DProgramType;
     import flash.display3D.Program3D;
-    
-    import starling.textures.Texture;
+
+	import starling.display.programs.IProgram;
+	import starling.textures.Texture;
     import starling.utils.Color;
 
     /** The BlurFilter applies a Gaussian blur to an object. The strength of the blur can be
@@ -25,9 +26,10 @@ package starling.filters
     public class BlurFilter extends FragmentFilter
     {
         private const MAX_SIGMA:Number = 2.0;
-        
-        private var mNormalProgram:Program3D;
-        private var mTintedProgram:Program3D;
+
+	    //SIG: replace with MultiStarling-friendly IProgram
+        private var mNormalProgram:IProgram;
+        private var mTintedProgram:IProgram;
         
         private var mOffsets:Vector.<Number> = new <Number>[0, 0, 0, 0];
         private var mWeights:Vector.<Number> = new <Number>[0, 0, 0, 0];
@@ -101,7 +103,7 @@ package starling.filters
             mTintedProgram = createProgram(true);
         }
         
-        private function createProgram(tinted:Boolean):Program3D
+        private function createProgram(tinted:Boolean):IProgram
         {
             // vc0-3 - mvp matrix
             // vc4   - kernel offset
@@ -171,11 +173,11 @@ package starling.filters
             if (mUniformColor && pass == numPasses - 1)
             {
                 context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, mColor);
-                context.setProgram(mTintedProgram);
+	            mTintedProgram.activate(context);
             }
             else
             {
-                context.setProgram(mNormalProgram);
+	            mNormalProgram.activate(context);
             }
         }
         

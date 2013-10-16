@@ -11,8 +11,10 @@
 package starling.text
 {
     import flash.geom.Rectangle;
+	import flash.utils.ByteArray;
     import flash.utils.Dictionary;
-    
+	import flash.utils.Endian;
+
     import starling.display.Image;
     import starling.display.QuadBatch;
     import starling.display.Sprite;
@@ -66,24 +68,22 @@ package starling.text
         private static const CHAR_CARRIAGE_RETURN:int = 13;
         
         private var mTexture:Texture;
-        private var mChars:Dictionary;
-        private var mName:String;
-        private var mSize:Number;
-        private var mLineHeight:Number;
-        private var mBaseline:Number;
+	    // SIG: protected for MultiStarlingBitmapFont
+        protected var mChars:Dictionary;
+	    protected var mName:String;
+	    protected var mSize:Number;
+	    protected var mLineHeight:Number;
+	    protected var mBaseline:Number;
         private var mHelperImage:Image;
         private var mCharLocationPool:Vector.<CharLocation>;
-        
+
+	    // SIG: add support for binary data
         /** Creates a bitmap font by parsing an XML file and uses the specified texture. 
          *  If you don't pass any data, the "mini" font will be created. */
-        public function BitmapFont(texture:Texture=null, fontXml:XML=null)
+        public function BitmapFont(texture:Texture=null, fontData:Object=null)
         {
-            // if no texture is passed in, we create the minimal, embedded font
-            if (texture == null && fontXml == null)
-            {
-                texture = MiniBitmapFont.texture;
-                fontXml = MiniBitmapFont.xml;
-            }
+            var fontXml : XML = fontData as XML;
+	        var fontBinary : ByteArray = fontData as ByteArray;
             
             mName = "unknown";
             mLineHeight = mSize = mBaseline = 14;
@@ -91,8 +91,10 @@ package starling.text
             mChars = new Dictionary();
             mHelperImage = new Image(texture);
             mCharLocationPool = new <CharLocation>[];
-            
+
+
             if (fontXml) parseFontXml(fontXml);
+            else if ( fontBinary ) parseFontBinary( fontBinary );
         }
         
         /** Disposes the texture of the bitmap font! */
@@ -147,6 +149,178 @@ package starling.text
                 if (second in mChars) getChar(second).addKerning(first, amount);
             }
         }
+
+	    private function parseFontBinary( fontData : ByteArray ) : void {
+		    fontData.position = 0;
+		    fontData.endian = Endian.LITTLE_ENDIAN;
+		    if ( ( fontData.readByte() != 66 ) || ( fontData.readByte() != 77 ) || ( fontData.readByte() != 70 ) || ( fontData.readByte() != 3 ) ) {
+			    return;
+		    }
+		    var pages : uint;
+		    while ( fontData.bytesAvailable ) {
+			    var blockType : uint = fontData.readUnsignedByte();
+			    var blockSize : uint = fontData.readUnsignedInt();
+			    switch ( blockType ) {
+				    case 1 :
+					    parseFontBinaryBlock1Info( fontData, blockSize );
+					    break;
+				    case 2 :
+					    pages = parseFontBinaryBlock2Common( fontData, blockSize );
+					    break;
+				    case 3 :
+					    parseFontBinaryBlock3Pages( fontData, blockSize, pages );
+					    break;
+				    case 4 :
+					    parseFontBinaryBlock4Chars( fontData, blockSize, mTexture.scale, mTexture.frame );
+					    break;
+				    case 5 :
+					    parseFontBinaryBlock5Kernings( fontData, blockSize, mTexture.scale );
+					    break;
+				    default :
+					    fontData.position += blockSize;
+			    }
+		    }
+	    }
+
+	    private function parseFontBinaryBlock1Info( fontData : ByteArray, blockSize : uint ) : void {
+		    /*
+		     field	size	type	pos	comment
+		     bitField	1	bits	2	bit 0: smooth, bit 1: unicode, bit 2: italic, bit 3: bold, bit 4: fixedHeigth, bits 5-7: reserved
+		     charSet	1	uint	3
+		     stretchH	2	uint	4
+		     aa	1	uint	6
+		     paddingUp	1	uint	7
+		     paddingRight	1	uint	8
+		     paddingDown	1	uint	9
+		     paddingLeft	1	uint	10
+		     spacingHoriz	1	uint	11
+		     spacingVert	1	uint	12
+		     outline	1	uint	13	added with version 2
+		     fontName	n+1	string	14	null terminated string with length n
+		     */
+
+		    var size : int = fontData.readShort();
+		    var bitField : uint = fontData.readByte();
+		    var charSet : uint = fontData.readUnsignedByte();
+		    var stretchH : uint = fontData.readUnsignedShort();
+		    var aa : uint = fontData.readUnsignedByte();
+		    var paddingUp : uint = fontData.readUnsignedByte();
+		    var paddingRight : uint = fontData.readUnsignedByte();
+		    var paddingDown : uint = fontData.readUnsignedByte();
+		    var paddingLeft : uint = fontData.readUnsignedByte();
+		    var spacingHoriz : uint = fontData.readUnsignedByte();
+		    var spacingVert : uint = fontData.readUnsignedByte();
+		    var outline : uint = fontData.readUnsignedByte();
+		    var fontName : String = readString( fontData );
+		    mSize = size;
+		    mName = fontName;
+	    }
+
+	    private function parseFontBinaryBlock2Common( fontData : ByteArray, blockSize : uint ) : uint {
+		    /*
+		     field	size	type	pos	comment
+		     lineHeight	2	uint	0
+		     base	2	uint	2
+		     scaleW	2	uint	4
+		     scaleH	2	uint	6
+		     pages	2	uint	8
+		     bitField	1	bits	10	bits 0-6: reserved, bit 7: packed
+		     alphaChnl	1	uint	11
+		     redChnl	1	uint	12
+		     greenChnl	1	uint	13
+		     blueChnl	1	uint	14
+		     */
+		    var lineHeight : uint = fontData.readUnsignedShort();
+		    var base : uint = fontData.readUnsignedShort();
+		    var scaleW : uint = fontData.readUnsignedShort();
+		    var scaleH : uint = fontData.readUnsignedShort();
+		    var pages : uint = fontData.readUnsignedShort();
+		    var bitField : uint = fontData.readUnsignedByte();
+		    var alphaChnl : uint = fontData.readUnsignedByte();
+		    var redChnl : uint = fontData.readUnsignedByte();
+		    var greenChnl : uint = fontData.readUnsignedByte();
+		    var blueChnl : uint = fontData.readUnsignedByte();
+		    return pages;
+	    }
+
+	    private function parseFontBinaryBlock3Pages( fontData : ByteArray, blockSize : uint, pages : uint ) : void {
+//			fontData.position += blockSize;
+		    for ( var i : int = 0; i < pages; i++ ) {
+			    var pageName : String = readString( fontData )
+		    }
+	    }
+
+	    private function parseFontBinaryBlock4Chars( fontData : ByteArray, blockSize : uint, scale : Number, frame : Rectangle ) : void {
+		    /*
+		     field	size	type	pos	comment
+		     id	4	uint	0+c*20	These fields are repeated until all characters have been described
+		     x	2	uint	4+c*20
+		     y	2	uint	6+c*20
+		     width	2	uint	8+c*20
+		     height	2	uint	10+c*20
+		     xoffset	2	int	12+c*20
+		     yoffset	2	int	14+c*20
+		     xadvance	2	int	16+c*20
+		     page	1	uint	18+c*20
+		     chnl	1	uint	19+c*20
+		     */
+		    var chars : uint = blockSize / 20;
+		    for ( var i : int = 0; i < chars; i++ ) {
+			    var id : uint = fontData.readUnsignedInt();
+			    var x : uint = fontData.readUnsignedShort();
+			    var y : uint = fontData.readUnsignedShort();
+			    var width : uint = fontData.readUnsignedShort();
+			    var height : uint = fontData.readUnsignedShort();
+			    var xoffset : int = fontData.readShort();
+			    var yoffset : int = fontData.readShort();
+			    var xadvance : int = fontData.readShort();
+			    var page : uint = fontData.readUnsignedByte();
+			    var chnl : uint = fontData.readUnsignedByte();
+
+			    var _xOffset : Number = xoffset / scale;
+			    var _yOffset : Number = yoffset / scale;
+			    var _xAdvance : Number = xadvance / scale;
+
+			    var region : Rectangle = new Rectangle();
+			    region.x = x / scale + frame.x;
+			    region.y = y / scale + frame.y;
+			    region.width = width / scale;
+			    region.height = height / scale;
+
+			    var texture : Texture = Texture.fromTexture( mTexture, region );
+			    var bitmapChar : BitmapChar = new BitmapChar( id, texture, _xOffset, _yOffset, _xAdvance );
+			    addChar( id, bitmapChar );
+		    }
+
+	    }
+
+	    private function parseFontBinaryBlock5Kernings( fontData : ByteArray, blockSize : uint, scale : Number ) : void {
+		    /*
+		     field	size	type	pos	comment
+		     first	4	uint	0+c*10	These fields are repeated until all kerning pairs have been described
+		     second	4	uint	4+c*10
+		     amount	2	int	8+c*6
+		     */
+		    var kernings : uint = blockSize / 10;
+		    for ( var i : int = 0; i < kernings; i++ ) {
+			    var first : uint = fontData.readUnsignedInt();
+			    var second : uint = fontData.readUnsignedInt();
+			    var amount : int = fontData.readShort();
+			    var _amount : Number = amount / scale;
+			    if ( mChars[ second ] ) {
+				    getChar( second ).addKerning( first, _amount );
+			    }
+		    }
+	    }
+
+	    private function readString( fontData : ByteArray ) : String {
+		    var res : String = "";
+		    var char : uint;
+		    while ( char = fontData.readUnsignedByte() ) {
+			    res += String.fromCharCode( char );
+		    }
+		    return res;
+	    }
         
         /** Returns a single bitmap char with a certain character ID. */
         public function getChar(charID:int):BitmapChar

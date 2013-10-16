@@ -13,8 +13,9 @@ package starling.utils
     import flash.geom.Matrix;
     import flash.geom.Matrix3D;
     import flash.geom.Point;
-    
-    import starling.errors.AbstractClassError;
+	import flash.geom.Rectangle;
+
+	import starling.errors.AbstractClassError;
 
     /** A utility class containing methods related to the Matrix class. */
     public class MatrixUtil
@@ -137,5 +138,20 @@ package starling.utils
                          matrix.d * cosX - matrix.b * sinX,
                          matrix.tx, matrix.ty);
         }
+
+	    // SIG: helper method for bounds transformation
+	    public static function transformBounds( matrix : Matrix, x : Number, y : Number, width : Number, height : Number, resultRect : Rectangle = null ) : Rectangle {
+		    if ( !resultRect ) {
+			    resultRect = new Rectangle();
+		    }
+		    var cx : Number = x + width * 0.5;
+		    var cy : Number = y + height * 0.5;
+		    var rcx : Number = matrix.a * cx + matrix.c * cy + matrix.tx;
+		    var rcy : Number = matrix.d * cy + matrix.b * cx + matrix.ty;
+		    var rw : Number = Math.abs( matrix.a * width ) + Math.abs( matrix.b * height );
+		    var rh : Number = Math.abs( matrix.c * width ) + Math.abs( matrix.d * height );
+		    resultRect.setTo( rcx - rw * 0.5, rcy - rh * 0.5, rw, rh );
+		    return resultRect;
+	    }
     }
 }

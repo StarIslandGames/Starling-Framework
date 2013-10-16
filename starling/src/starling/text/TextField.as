@@ -80,7 +80,8 @@ package starling.text
         private var mAutoSize:String;
         private var mKerning:Boolean;
         private var mNativeFilters:Array;
-        private var mRequiresRedraw:Boolean;
+	    // SIG: Protected for MultiStarlingTextField
+        protected var mRequiresRedraw:Boolean;
         private var mIsRenderedText:Boolean;
         private var mTextBounds:Rectangle;
         
@@ -298,7 +299,7 @@ package starling.text
             else
                 mQuadBatch.reset();
             
-            var bitmapFont:BitmapFont = bitmapFonts[mFontName];
+            var bitmapFont:BitmapFont = _getBitmapFont(mFontName);
             if (bitmapFont == null) throw new Error("Bitmap font not registered: " + mFontName);
             
             var width:Number  = mHitArea.width;
@@ -420,12 +421,9 @@ package starling.text
         {
             if (mFontName != value)
             {
-                if (value == BitmapFont.MINI && bitmapFonts[value] == undefined)
-                    registerBitmapFont(new BitmapFont());
-                
                 mFontName = value;
                 mRequiresRedraw = true;
-                mIsRenderedText = bitmapFonts[value] == undefined;
+                mIsRenderedText = !_getBitmapFont(value);
             }
         }
         
@@ -605,9 +603,17 @@ package starling.text
             delete bitmapFonts[name];
         }
         
+		//SIG: get bitmap font with method
+	    protected function _getBitmapFont( name : String ) : BitmapFont {
+			return getBitmapFont( name );
+		}
+
         /** Returns a registered bitmap font (or null, if the font has not been registered). */
         public static function getBitmapFont(name:String):BitmapFont
         {
+	        if ( name == BitmapFont.MINI && bitmapFonts[name] == undefined ) {
+		        registerBitmapFont( MiniBitmapFont.font );
+		    }
             return bitmapFonts[name];
         }
         

@@ -345,7 +345,20 @@ package starling.textures
             // rendering, textures need to be immutable (except 'repeat', which is not cached,
             // anyway).
         }
-        
+
+	    /// SIG: memory-friendly get frame
+	    public function getFrameTo( dst : Rectangle = null ) : Rectangle {
+		    if ( !dst ) {
+			    return frame;
+		    }
+		    if ( mFrame ) {
+			    dst.copyFrom( mFrame );
+		    } else {
+			    dst.setTo( 0, 0, width, height );
+		    }
+		    return dst;
+	    }
+
         /** Indicates if the texture should repeat like a wallpaper or stretch the outermost pixels.
          *  Note: this only works in textures with sidelengths that are powers of two and 
          *  that are not loaded from a texture atlas (i.e. no subtextures). @default false */

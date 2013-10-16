@@ -99,7 +99,25 @@ package starling.textures
         /** The clipping rectangle, which is the region provided on initialization 
          *  scaled into [0.0, 1.0]. */
         public function get clipping():Rectangle { return mClipping.clone(); }
-        
+
+	    // SIG: memory-friendly get clipping
+	    public function getClippingTo( dst : Rectangle = null ) : Rectangle {
+		    if ( !dst ) {
+			    return mClipping.clone();
+		    }
+		    dst.copyFrom( mClipping );
+		    return dst;
+	    }
+
+	    // SIG: getter for mRootClipping
+	    public function getRootClippingTo( dst : Rectangle = null ) : Rectangle {
+		    if ( !dst ) {
+			    return mRootClipping.clone();
+		    }
+		    dst.copyFrom( mRootClipping );
+		    return dst;
+	    }
+
         /** @inheritDoc */
         public override function get base():TextureBase { return mParent.base; }
         

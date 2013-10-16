@@ -19,6 +19,7 @@ package starling.display
     import flash.utils.getQualifiedClassName;
     
     import starling.core.RenderSupport;
+	import starling.core.starling_internal;
     import starling.errors.AbstractClassError;
     import starling.errors.AbstractMethodError;
     import starling.events.EventDispatcher;
@@ -27,6 +28,8 @@ package starling.display
     import starling.utils.HAlign;
     import starling.utils.MatrixUtil;
     import starling.utils.VAlign;
+
+	use namespace starling_internal;
     
     /** Dispatched when an object is added to a parent. */
     [Event(name="added", type="starling.events.Event")]
@@ -112,7 +115,7 @@ package starling.display
     public class DisplayObject extends EventDispatcher
     {
         // members
-        
+
         private var mX:Number;
         private var mY:Number;
         private var mPivotX:Number;
@@ -128,7 +131,8 @@ package starling.display
         private var mBlendMode:String;
         private var mName:String;
         private var mUseHandCursor:Boolean;
-        private var mParent:DisplayObjectContainer;  
+	    // SIG: make sig-visible for optimization
+	    starling_internal var mParent:DisplayObjectContainer;
         private var mTransformationMatrix:Matrix;
         private var mOrientationChanged:Boolean;
         private var mFilter:FragmentFilter;

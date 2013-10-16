@@ -16,7 +16,9 @@ package starling.filters
     import flash.display3D.Context3D;
     import flash.display3D.Context3DProgramType;
     import flash.display3D.Program3D;
-    
+
+	import starling.display.programs.IProgram;
+
     import starling.textures.Texture;
     
     /** The ColorMatrixFilter class lets you apply a 4x5 matrix transformation on the RGBA color 
@@ -41,7 +43,8 @@ package starling.filters
      */
     public class ColorMatrixFilter extends FragmentFilter
     {
-        private var mShaderProgram:Program3D;
+	    //SIG: replace with MultiStarling-friendly IProgram
+        private var mShaderProgram:IProgram;
         
         private var mUserMatrix:Vector.<Number>;   // offset in range 0-255
         private var mShaderMatrix:Vector.<Number>; // offset in range 0-1, changed order
@@ -98,7 +101,7 @@ package starling.filters
         {
             context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, mShaderMatrix);
             context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 5, MIN_COLOR);
-            context.setProgram(mShaderProgram);
+	        mShaderProgram.activate(context);
         }
         
         // color manipulation

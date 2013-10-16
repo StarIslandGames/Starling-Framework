@@ -22,7 +22,7 @@ package starling.display
     import starling.events.Event;
     import starling.filters.FragmentFilter;
     import starling.utils.MatrixUtil;
-    
+
     use namespace starling_internal;
     
     /**
@@ -65,7 +65,8 @@ package starling.display
     public class DisplayObjectContainer extends DisplayObject
     {
         // members
-        private var mChildren:Vector.<DisplayObject>;
+	    // SIG: make sig-visible for optimization
+        starling_internal var mChildren:Vector.<DisplayObject>;
         
         /** Helper objects. */
         private static var sHelperMatrix:Matrix = new Matrix();
@@ -445,6 +446,13 @@ package starling.display
                 for (var i:int=0; i<numChildren; ++i)
                     getChildEventListeners(children[i], eventType, listeners);
             }
+        }
+
+	    // SIG: fast remove all children (without events)
+	    starling_internal function removeAllChildrenFast(): void {
+		    for (var i: int = 0; i < numChildren; i++)
+			    mChildren[i].mParent = null;
+		    mChildren.length = 0;
         }
     }
 }

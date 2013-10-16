@@ -272,22 +272,31 @@ package starling.text
             <char id="32" x="6" y="56" width="0" height="0" xoffset="0" yoffset="127" xadvance="3"/>
           </chars>
         </font>;
-        
-        public static function get texture():Texture
-        {
-            var bmpData:BitmapData = new BitmapData(BITMAP_WIDTH, BITMAP_HEIGHT);
-            var bmpBytes:ByteArray = new ByteArray();
-            var numBytes:int = BITMAP_DATA.length;
-            
-            for (var i:int=0; i<numBytes; ++i)
-                bmpBytes.writeUnsignedInt(BITMAP_DATA[i]);
-            
-            bmpBytes.uncompress();
-            bmpData.setPixels(new Rectangle(0, 0, BITMAP_WIDTH, BITMAP_HEIGHT), bmpBytes);
-            
-            return Texture.fromBitmapData(bmpData, false);
-        }
+
+	    private static var _font : BitmapFont;
+
+	    public static function get texture() : Texture {
+		    return Texture.fromBitmapData( bitmap, false );
+	    }
+
+	    public static function get bitmap() : BitmapData {
+		    var bmpData : BitmapData = new BitmapData( BITMAP_WIDTH, BITMAP_HEIGHT );
+		    var bmpBytes : ByteArray = new ByteArray();
+		    var numBytes : int = BITMAP_DATA.length;
+
+		    for ( var i : int = 0; i < numBytes; ++i ) {
+			    bmpBytes.writeUnsignedInt( BITMAP_DATA[i] );
+		    }
+
+		    bmpBytes.uncompress();
+		    bmpData.setPixels( bmpData.rect, bmpBytes );
+		    return bmpData;
+	    }
         
         public static function get xml():XML { return XML_DATA; }
+
+	    public static function get font() : BitmapFont {
+		    return new BitmapFont( texture, xml );
+	    }
     }
 }

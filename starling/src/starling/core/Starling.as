@@ -220,7 +220,8 @@ package starling.core
             mViewPort = viewPort;
             mPreviousViewPort = new Rectangle();
             mStage3D = stage3D;
-            mStage = new Stage(viewPort.width, viewPort.height, stage.color);
+	        // SIG: Stage now has reference to Starling object
+            mStage = new Stage(this, viewPort.width, viewPort.height, stage.color);
             mNativeOverlay = new Sprite();
             mNativeStage = stage;
             mNativeStage.addChild(mNativeOverlay);
@@ -392,7 +393,14 @@ package starling.core
             mSupport.nextFrame();
             
             if (!mShareContext)
-                RenderSupport.clear(mStage.color, 1.0);
+            {
+	            try {
+                    RenderSupport.clear(mStage.color, 1.0);
+	            } catch ( err : Error ) {
+		            trace( "ERROR: Starling.render(): context is lost (" + err.toString() + ")" );
+		            return;
+	            }
+            }
             
             var scaleX:Number = mViewPort.width  / mStage.stageWidth;
             var scaleY:Number = mViewPort.height / mStage.stageHeight;
@@ -591,8 +599,9 @@ package starling.core
             if (event is MouseEvent)
             {
                 var mouseEvent:MouseEvent = event as MouseEvent;
-                globalX = mouseEvent.stageX;
-                globalY = mouseEvent.stageY;
+	            /// SIG: Fix Desktop AIR wrong event mouse positions
+                globalX = mNativeStage.mouseX; //mouseEvent.stageX;
+                globalY = mNativeStage.mouseY; //mouseEvent.stageY;
                 touchID = 0;
                 
                 // MouseEvent.buttonDown returns true for both left and right button (AIR supports
@@ -630,6 +639,11 @@ package starling.core
             
             // enqueue touch in touch processor
             mTouchProcessor.enqueue(touchID, phase, globalX, globalY, pressure, width, height);
+
+	        // SIG: enqueue one more touch on mouse_up for hover working properly
+	        if ( event.type === MouseEvent.MOUSE_UP ) {
+		        mTouchProcessor.enqueue( touchID, TouchPhase.HOVER, globalX, globalY, pressure, width, height );
+	        }
         }
         
         private function get touchEventTypes():Array
@@ -685,7 +699,9 @@ package starling.core
         /** Indicates if a context is available and non-disposed. */
         private function get contextValid():Boolean
         {
-            return (mContext && mContext.driverInfo != "Disposed");
+            return (mContext !== null);
+	        // SIG: Comment next check for optimization (String memory allocate in driverInfo)
+	        // && mContext.driverInfo != "Disposed");
         }
         
         /** Indicates if this Starling instance is started. */

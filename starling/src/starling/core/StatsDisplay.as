@@ -18,7 +18,8 @@ package starling.core
     import starling.events.EnterFrameEvent;
     import starling.events.Event;
     import starling.text.BitmapFont;
-    import starling.text.TextField;
+	import starling.text.MultiStarlingTextField;
+	import starling.text.TextField;
     import starling.utils.HAlign;
     import starling.utils.VAlign;
     
@@ -42,7 +43,7 @@ package starling.core
         public function StatsDisplay()
         {
             mBackground = new Quad(50, 25, 0x0);
-            mTextField = new TextField(48, 25, "", BitmapFont.MINI, BitmapFont.NATIVE_SIZE, 0xffffff);
+            mTextField = new MultiStarlingTextField(48, 25, "", BitmapFont.MINI, BitmapFont.NATIVE_SIZE, 0xffffff);
             mTextField.x = 2;
             mTextField.hAlign = HAlign.LEFT;
             mTextField.vAlign = VAlign.TOP;

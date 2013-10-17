@@ -191,7 +191,10 @@ package starling.core
         private static var sCurrent:Starling;
         private static var sHandleLostContext:Boolean;
         private static var sContextData:Dictionary = new Dictionary(true);
-        
+
+	    // SIG: add starling stack for MultiStarling purposes
+        private static var _starlingStack : Vector.<Starling> = new Vector.<Starling>();
+
         // construction
         
         /** Creates a new Starling instance. 
@@ -971,5 +974,30 @@ package starling.core
             else
                 sHandleLostContext = value;
         }
+
+	    // SIG: MutliStarling stack
+	    static public function pushStarling( starling : Starling ) : void {
+		    _starlingStack.push( sCurrent );
+		    if ( starling ) {
+			    starling.makeCurrent();
+		    }
+	    }
+
+	    static public function popStarling() : Starling {
+		    if ( !_starlingStack.length ) {
+			    return null;
+		    }
+		    _starlingStack.pop().makeCurrent();
+		    return sCurrent;
+	    }
+
+	    public function push() : void {
+		    pushStarling( this );
+	    }
+
+	    public function pop() : Starling {
+		    return popStarling();
+	    }
+
     }
 }

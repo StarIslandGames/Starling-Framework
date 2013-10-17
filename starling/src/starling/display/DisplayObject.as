@@ -754,5 +754,21 @@ package starling.display
         /** The stage the display object is connected to, or null if it is not connected 
          *  to the stage. */
         public function get stage():Stage { return this.base as Stage; }
+
+	    // SIG: Quick access to Starling.pushStarling()
+	    public function pushStarling() : void {
+		    var stage : Stage = this.stage;
+		    if ( stage ) {
+			    stage.starling.push();
+		    } else {
+			    Starling.pushStarling( null );
+		    }
+	    }
+
+	    // SIG: Quick access to Starling.popStarling()
+	    public function popStarling() : Starling {
+		    return Starling.popStarling();
+	    }
+
     }
 }

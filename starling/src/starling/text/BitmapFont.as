@@ -287,8 +287,8 @@ package starling.text
 			    var _xAdvance : Number = xadvance / scale;
 
 			    var region : Rectangle = new Rectangle();
-			    region.x = x / scale + frame.x;
-			    region.y = y / scale + frame.y;
+			    region.x = x / scale + (frame ? frame.x : 0);
+			    region.y = y / scale + (frame ? frame.y : 0);
 			    region.width = width / scale;
 			    region.height = height / scale;
 

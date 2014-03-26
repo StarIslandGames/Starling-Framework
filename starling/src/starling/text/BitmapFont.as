@@ -233,7 +233,7 @@ package starling.text
 		     greenChnl	1	uint	13
 		     blueChnl	1	uint	14
 		     */
-		    var lineHeight : uint = fontData.readUnsignedShort();
+		    mLineHeight = fontData.readUnsignedShort();
 		    var base : uint = fontData.readUnsignedShort();
 		    var scaleW : uint = fontData.readUnsignedShort();
 		    var scaleH : uint = fontData.readUnsignedShort();

@@ -111,7 +111,8 @@ package starling.text
         private var mBorder:DisplayObjectContainer;
         
         private var mImage:Image;
-        private var mQuadBatch:QuadBatch;
+		// SIG: Protected for MultiStarlingTextField
+        protected var mQuadBatch:QuadBatch;
         
         /** Helper objects. */
         private static var sHelperMatrix:Matrix = new Matrix();

@@ -24,7 +24,7 @@ package starling.filters
     
     import starling.core.RenderSupport;
     import starling.core.Starling;
-    import starling.core.starling_internal;
+	import starling.core.starling_internal;
     import starling.display.BlendMode;
     import starling.display.DisplayObject;
     import starling.display.Image;
@@ -91,10 +91,14 @@ package starling.filters
         
         private var mNumPasses:int;
 	    //SIG: MultiStarling fixes of mPassTextures
-        //private var mPassTextures:Vector.<Texture>;
 	    private var _msPassTextures:Dictionary = new Dictionary( true );
 	    private function get mPassTextures() : Vector.<Texture> { return _msPassTextures[ Starling.context ] }
 	    private function set mPassTextures( val : Vector.<Texture> ) : void { _msPassTextures[ Starling.context ] = val; }
+
+	    //SIG: MultiStarling fixes
+	    private var _msProgramsCreated:Dictionary = new Dictionary( true );
+	    private function get programsCreated() : Boolean { return _msProgramsCreated[ Starling.context ]; }
+	    private function set programsCreated( val : Boolean ) : void { _msProgramsCreated[ Starling.context ] = true; }
 
         private var mMode:String;
         private var mResolution:Number;
@@ -104,10 +108,18 @@ package starling.filters
         private var mOffsetY:Number;
         
         private var mVertexData:VertexData;
-        private var mVertexBuffer:VertexBuffer3D;
+	    //SIG: MultiStarling fixes
+        private var _msVertexBuffer : Dictionary = new Dictionary( true );
+	    private function get mVertexBuffer() : VertexBuffer3D { return _msVertexBuffer[ Starling.context ] }
+	    private function set mVertexBuffer( val : VertexBuffer3D ) : void { _msVertexBuffer[ Starling.context ] = val }
         private var mIndexData:Vector.<uint>;
-        private var mIndexBuffer:IndexBuffer3D;
-        
+	    //SIG: MultiStarling fixes
+        private var _msIndexBuffer:Dictionary = new Dictionary( true );
+	    private function get mIndexBuffer() : IndexBuffer3D { return _msIndexBuffer[ Starling.context ] }
+	    private function set mIndexBuffer( val : IndexBuffer3D ) : void { _msIndexBuffer[ Starling.context ] = val }
+        //SIG: SINGLETONE usages
+		starling_internal var _disposeRequired : Boolean = true;
+
         private var mCacheRequested:Boolean;
         private var mCache:QuadBatch;
         
@@ -144,21 +156,14 @@ package starling.filters
             
             mIndexData = new <uint>[0, 1, 2, 1, 3, 2];
             mIndexData.fixed = true;
-            
-            createPrograms();
-            
-            // Handle lost context. By using the conventional event, we can make it weak; this  
-            // avoids memory leaks when people forget to call "dispose" on the filter.
-            Starling.current.stage3D.addEventListener(Event.CONTEXT3D_CREATE, 
-                onContextCreated, false, 0, true);
+
         }
         
         /** Disposes the filter (programs, buffers, textures). */
         public function dispose():void
         {
-            Starling.current.stage3D.removeEventListener(Event.CONTEXT3D_CREATE, onContextCreated);
-            if (mVertexBuffer) mVertexBuffer.dispose();
-            if (mIndexBuffer)  mIndexBuffer.dispose();
+	        for each ( var mVertexBuffer : VertexBuffer3D in _msVertexBuffer ) mVertexBuffer.dispose();
+	        for each ( var mIndexBuffer : IndexBuffer3D in _msIndexBuffer ) mIndexBuffer.dispose();
             disposePassTextures();
             disposeCache();
         }
@@ -178,6 +183,11 @@ package starling.filters
          *  for the object the filter is attached to. */
         public function render(object:DisplayObject, support:RenderSupport, parentAlpha:Number):void
         {
+
+	        if ( !programsCreated ) {
+		        createPrograms();
+		        programsCreated = true;
+	        }
             // bottom layer
             
             if (mode == FragmentFilterMode.ABOVE)
@@ -435,7 +445,7 @@ package starling.filters
             for each (var texture:Texture in mPassTextures)
                 texture.dispose();
 
-	        _msPassTextures = null;
+	        _msPassTextures = new Dictionary( true );
         }
         
         private function disposeCache():void

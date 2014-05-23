@@ -148,8 +148,8 @@ package starling.utils
 		    var cy : Number = y + height * 0.5;
 		    var rcx : Number = matrix.a * cx + matrix.c * cy + matrix.tx;
 		    var rcy : Number = matrix.d * cy + matrix.b * cx + matrix.ty;
-		    var rw : Number = Math.abs( matrix.a * width ) + Math.abs( matrix.b * height );
-		    var rh : Number = Math.abs( matrix.c * width ) + Math.abs( matrix.d * height );
+		    var rw : Number = Math.abs( matrix.a * width ) + Math.abs( matrix.c * height );
+		    var rh : Number = Math.abs( matrix.b * width ) + Math.abs( matrix.d * height );
 		    resultRect.setTo( rcx - rw * 0.5, rcy - rh * 0.5, rw, rh );
 		    return resultRect;
 	    }

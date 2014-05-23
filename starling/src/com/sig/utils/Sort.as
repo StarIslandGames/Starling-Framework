@@ -9,6 +9,14 @@ package com.sig.utils {
 		static private const BUFFER : Vector.<Object> = new Vector.<Object>();
 
 		/**
+		 * Sort string vector using mergeSort()
+		 * @param input
+		 */
+		static public function sortString( input : Vector.<String> ) : void {
+			mergeSort( input as Vector.<*>, sortStringCompare );
+		}
+
+		/**
 		 * Fast memory-friendly sorting of vector elements
 		 */
 		static public function mergeSort( input : Vector.<*>, compareFunc : Function, buffer : Vector.<*> = null ) : void {
@@ -58,6 +66,13 @@ package com.sig.utils {
 					input[i] = buffer[int( i - startIndex )];
 				}
 			}
+		}
+
+		static private function sortStringCompare( a : String, b : String ) : Number {
+			if ( a === b ) {
+				return 0;
+			}
+			return a > b ? 1 : -1;
 		}
 
 	}

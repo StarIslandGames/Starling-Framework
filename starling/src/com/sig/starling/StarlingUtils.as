@@ -6,6 +6,8 @@ package com.sig.starling {
 
 	import flash.display.BitmapData;
 	import flash.display.BitmapDataChannel;
+	import flash.display3D.textures.Texture;
+	import flash.display3D.textures.TextureBase;
 	import flash.filters.ColorMatrixFilter;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
@@ -118,22 +120,21 @@ package com.sig.starling {
 			return 0xff - _pixelBitmap.getPixel( 0, 0 ) & 0xff;
 		}
 
-		private static function _getSupport() : RenderSupport {
+		private static function _getSupport() : Utils_RenderSupport {
 			if ( !Starling.current ) {
 				return null;
 			}
-			var support : RenderSupport = _support[ Starling.current ];
+			var support : Utils_RenderSupport = _support[ Starling.current ];
 			if ( !support ) {
-				support = _support[ Starling.current ] = new RenderSupport();
+				support = _support[ Starling.current ] = new Utils_RenderSupport();
 			}
 			return support;
 		}
 
 		private static function _render( source : DisplayObject, target : BitmapData, clip : Rectangle = null, transform : Matrix = null, bgColor : uint = 0, bgAlpha : Number = 0, blendMode : String = null, currentStarling : Starling = null ) : Boolean {
 			source.pushStarling();
-
 			var mStage : Stage = Starling.current.stage;
-			var _support : RenderSupport = _getSupport();
+			var _support : Utils_RenderSupport = _getSupport();
 			_support.nextFrame();
 			_support.setOrthographicProjection( 0, 0, mStage.stageWidth, mStage.stageHeight );
 			try {
@@ -143,11 +144,7 @@ package com.sig.starling {
 				trace( "ERROR: StarlingUtils._render(): context is lost (" + err.toString() + ")" );
 				return false;
 			}
-			var sourceBlendMode : String = source.blendMode;
-			if ( blendMode ) {
-				_support.blendMode = blendMode;
-				source.blendMode = BlendMode.AUTO;
-			}
+			_support.setBlendMode( blendMode ? blendMode : BlendMode.NORMAL );
 			if ( transform ) {
 				_support.pushMatrix();
 				_support.prependMatrix( transform );
@@ -159,10 +156,6 @@ package com.sig.starling {
 			_support.finishQuadBatch();
 			if ( clip ) {
 				_support.popClipRect();
-			}
-			if ( blendMode ) {
-				_support.blendMode = BlendMode.NORMAL;
-				source.blendMode = sourceBlendMode;
 			}
 			Starling.context.drawToBitmapData( target );
 			source.popStarling();
@@ -205,14 +198,40 @@ package com.sig.starling {
 			parent.mChildren.length = len;
 		}
 
-		public static function removeChildrenSilent( parent : DisplayObjectContainer ) : void {
+		public static function removeChildrenSilent( parent : DisplayObjectContainer, disposeChildren : Boolean = false ) : void {
 			var len : int = parent.mChildren.length;
 			for ( var i : int = 0; i < len; i++ ) {
-				parent.mChildren[ i ].mParent = null;
+				var child : DisplayObject = parent.mChildren[ i ]
+				child.mParent = null;
+				if ( disposeChildren ) {
+					child.dispose();
+				}
 			}
 			parent.mChildren.length = 0;
 		}
 
+		public static function updateTextureData( tb : TextureBase, bitmapData : BitmapData ) : void {
+			Texture( tb ).uploadFromBitmapData(
+				bitmapData );
+		}
+	}
+
+}
+
+import starling.core.RenderSupport;
+
+
+class Utils_RenderSupport extends RenderSupport {
+
+	public function setBlendMode( mode : String ) : void {
+		super.blendMode = mode;
+	}
+
+	override public function get blendMode() : String {
+		return super.blendMode;
+	}
+
+	override public function set blendMode( value : String ) : void {
 	}
 
 }

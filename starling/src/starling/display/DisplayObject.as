@@ -178,7 +178,8 @@ package starling.display
           * GPU buffers are released, event listeners are removed, filters are disposed. */
         public function dispose():void
         {
-            if (mFilter) mFilter.dispose();
+			// SIG: SINGLETONE filter disposal
+            if (mFilter && mFilter._disposeRequired) mFilter.dispose();
             removeEventListeners();
         }
         
